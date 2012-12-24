@@ -1,6 +1,6 @@
 // MP 2: Due Sunday, Dec 16, 2012 at 11:59 p.m. PST
 #include    <wb.h>
-
+#define TILE_SIZE 1
 #define wbCheck(stmt) do {                                 \
         cudaError_t err = stmt;                            \
         if (err != cudaSuccess) {                          \
@@ -15,12 +15,12 @@ __global__ void matrixMultiply(float * A, float * B, float * C,
 			       int numBRows, int numBColumns,
 			       int numCRows, int numCColumns) {
     //@@ Insert code to implement matrix multiplication here
-    int Row = blockIdx.y*blockDim.y+threadIdx.y;
-    int Col = blockIdx.x*blockDim.x+threadIdx.x;
-    if ((Row < Width) && (Col < Width)) {
-        float Pvalue = 0;
-        for (int k = 0; k < Width; ++k) Pvalue += M[Row*Width+k] * N[k*Width+Col];
-        P[Row*Width+Col] = Pvalue;
+    int r = blockIdx.y*blockDim.y+threadIdx.y;
+    int c = blockIdx.x*blockDim.x+threadIdx.x;
+    if ((r < numCRows) && (c < numCColumns)) {
+        float sum = 0;
+        for (int k = 0; k < numAColumns; ++k) sum += A[r*numAColumns+k] * B[k*numAColumns+c];
+        C[r*numCColumns+c] = sum;
     }
 }
 
@@ -45,7 +45,10 @@ int main(int argc, char ** argv) {
     hostA = (float *) wbImport(wbArg_getInputFile(args, 0), &numARows, &numAColumns);
     hostB = (float *) wbImport(wbArg_getInputFile(args, 1), &numBRows, &numBColumns);
     //@@ Set numCRows and numCColumns
-    if(numAColumns != numBRows) wbLog(ERROR, "input matrix dimensions are invalid");
+    if(numAColumns != numBRows){
+        wbLog(ERROR, "input matrix dimensions are invalid");
+        return -1;
+    }
     numCRows = numARows;
     numCColumns = numBColumns;
     //@@ Allocate the hostC matrix
@@ -74,14 +77,14 @@ int main(int argc, char ** argv) {
     wbTime_stop(GPU, "Copying input memory to the GPU.");
     
     //@@ Initialize the grid and block dimensions here
-    dim3 dimGrid(ceil(numCRows/32), ceil(numCColumns/32), 1);
-    dim3 dimBlock(32, 32, 1);
+    dim3 dimGrid(ceil(numCColumns/TILE_SIZE), ceil(numCRows/TILE_SIZE), 1);
+    dim3 dimBlock(TILE_SIZE, TILE_SIZE, 1);
 
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
     matrixMultiply<<<dimGrid,dimBlock>>>(deviceA,deviceB,deviceC,
-                                         numARows,numAColumns
-                                         numBRows,numBColumns
+                                         numARows,numAColumns,
+                                         numBRows,numBColumns,
                                          numCRows,numCColumns);
 
 

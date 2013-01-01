@@ -1,6 +1,6 @@
 // MP 3: Due Sunday, Dec 30, 2012 at 11:59 p.m. PST
 #include    <wb.h>
-#define TILE_SIZE 8
+#define TILE_SIZE 4
 #define wbCheck(stmt) do {                                 \
         cudaError_t err = stmt;                            \
         if (err != cudaSuccess) {                          \
@@ -16,6 +16,28 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 			             int numCRows, int numCColumns) {
     //@@ Insert code to implement matrix multiplication here
     //@@ You have to use shared memory for this MP
+		__shared__ float ds_M[TILE_SIZE][TILE_SIZE];
+		__shared__ float ds_N[TILE_SIZE][TILE_SIZE];
+		int bx = blockIdx.x;
+		int by = blockIdx.y;
+		int tx = threadIdx.x;
+		int ty = threadIdx.y;
+		
+		int row = by * TILE_SIZE + ty;
+		int col = bx * TILE_SIZE + tx;
+		float pVal = 0;
+
+		for(int i = 0; i < numBColumns/TILE_SIZE; ++i){
+			ds_M[ty][tx] = A[row * numAColumns + i * TILE_SIZE + tx];
+			ds_N[ty][tx] = A[(i * TILE_SIZE + ty)*numBColumns+col];
+			__syncthreads();
+			for(int j = 0; j < TILE_SIZE; ++j){
+				pVal += ds_M[ty][k] * ds_N[k][tx];
+			}
+			__syncthreads();
+			C[row * numCColumns + col] = pVal;
+			
+		}
 }
 
 int main(int argc, char ** argv) {

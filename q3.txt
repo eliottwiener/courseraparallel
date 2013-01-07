@@ -1,0 +1,61 @@
+Question 1
+Assume that a kernel is launched with 1000 thread blocks each of which has 512 threads. If a variable is declared as a shared memory variable, how many versions of the variable will be created through the lifetime of the execution of the kernel?
+512
+51200
+1
++ 1000
+
+
+Question 2
+For our tiled matrix-matrix multiplication kernel, if we use a 32X32 tile, what is the reduction of memory bandwidth usage for input matrices M and N?
++ 1/32 of the original usage
+1/8 of the original usage
+1/64 of the original usage
+1/16 of the original usage
+
+WHY: 
+
+
+Question 3
+For the tiled single-precision matrix multiplication kernel as shown in Lecture 4.4, assume that the tile size is 32X32 and the system has a DRAM bust size of 128 bytes. How many DRAM bursts will be delivered to the processor as a result of loading one M-matrix tile by a thread block?
+64
+16
+128
++ 32
+
+WHY: ?
+
+
+Question 4
+Assume that A is a global memory float array that is properly aligned to a DRAM burst section boundary. Further assume that the number of threads in the x-dimension of each thread block is greater than or equal to the warp size. Which of the following accesses in a kernel will make the most effective use of the DRAM bandwidth? Assume that k and Width are integer variables that do not depend on threadIdx.x or threadIdx.y. The Width value can be assumed to be a multiple of the DRAM burst size.
++ A[threadIdx.x+Width*k]
+A[threadIdx.x*Width + k]
+A[2*threadIdx.x]
+A[k*threadIdx.x]
+
+WHY: 
+
+
+Question 5
+Assume a DRAM system with a burst size of 512 bytes and a peak bandwidth of 240 GB/s. Assume a thread block size of 1024 and warp size of 32 and that A is a float array in the global memory. What is the maximal memory data access throughput we can hope to achieve in the following access to A?
+
+
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    float temp = A[8*i];
+60 GB/s
+240 GB/s
++ 30 GB/s
+120 GB/s
+
+WHY: A[0] = x, A[1] = x+4, A[2] = x+8, A[8*i] = A+(32*i), means we only access 4 bytes out of 32 bytes grabbed, 1/8th of it, 240/8 = 30
+
+
+Question 6
+Assume a tiled matrix multiplication that handles boundary conditions as explained in Lecture 5.4. If we use 32X32 tiles to process square matrices of 1000X1000, within EACH thread block, what is the maximal number of warps that will have control divergence due to handling boundary conditions for loading M matrix tiles throughout the kernel execution?
+24
+16
+8
++ 32
+
+WHY: We could have a block entirely off of the matrix, which would be outside the bounds.
